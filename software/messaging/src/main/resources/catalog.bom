@@ -1,0 +1,150 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+brooklyn.catalog:
+    version: "1.1.0-SNAPSHOT" # BROOKLYN_VERSION
+    itemType: entity
+    items:
+    - id: org.apache.brooklyn.entity.messaging.activemq.ActiveMQBroker
+      iconUrl: classpath:///activemq-logo.png
+      item:
+        type: org.apache.brooklyn.entity.messaging.activemq.ActiveMQBroker
+        name: ActiveMQ Broker
+        description: ActiveMQ is an open source message broker which fully implements the Java Message Service 1.1 (JMS)
+    - id: org.apache.brooklyn.entity.messaging.activemq-artemis
+      iconUrl: classpath:///activemq-logo.png
+      version: "1.1.0-SNAPSHOT" # BROOKLYN_VERSION
+      item:
+        type: org.apache.brooklyn.entity.software.base.VanillaSoftwareProcess
+        name: ActiveMQ Artemis
+        itemType: entity
+        description: Apache ActiveMQ Artemis has a proven non blocking architecture. It delivers outstanding performance. JMS 2.0 and 1.1 support.
+        brooklyn.parameters:
+        - name: rest.api.port
+          type: integer
+          default: 8161
+        brooklyn.config:
+          version: '2.3.0' # sets install.version
+          installFile: $brooklyn:formatString("apache-artemis-%1$s-bin.tar.gz", config("install.version"))
+          brokerName: broker1
+          installSourceDirectory: $brooklyn:formatString("apache-artemis-%1$s", config("install.version"))
+          downloadUrl: $brooklyn:formatString("http://apache.cbox.biz/activemq/activemq-artemis/%1$s/apache-artemis-%1$s-bin.tar.gz",config("install.version"), config("installFile")) # sets download.url
+          install.command:
+            $brooklyn:formatString("tar zxf %2$s", config("download.url"), config("installFile"))
+          customize.command:
+            $brooklyn:formatString:
+              - "%1$s/%2$s/bin/artemis create %3$s --user '%4$s' --password '%5$s' --require-login --name '%3$s' --addresses '%6$s' --http-port %7$s"
+              - $brooklyn:attributeWhenReady("expandedinstall.dir")
+              - $brooklyn:config("installSourceDirectory")
+              - $brooklyn:config("brokerName")
+              - $brooklyn:attributeWhenReady("user")
+              - $brooklyn:attributeWhenReady("password")
+              - $brooklyn:attributeWhenReady("host.name")
+              - $brooklyn:config("rest.api.port")
+          launch.command:
+            $brooklyn:formatString("%1$s/bin/artemis-service start", config("brokerName"))
+          checkRunning.command:
+            ps aux | grep '' | grep org.apache.activemq.artemis.boot.Artemis > /dev/null
+          stop.command:
+            $brooklyn:formatString("%1$s/bin/artemis-service stop", config("brokerName"))
+        brooklyn.initializers:
+        - type: org.apache.brooklyn.core.sensor.password.CreatePasswordSensor
+          brooklyn.config:
+            name: password
+            password.length: 12
+        - type: org.apache.brooklyn.core.sensor.StaticSensor
+          brooklyn.config:
+            name: user
+            static.value: br0kerusEr
+        - type: org.apache.brooklyn.core.sensor.StaticSensor
+          brooklyn.config:
+            name: main.uri
+            static.value:
+              $brooklyn:formatString("http://%s:%s", attributeWhenReady("host.name"), config("rest.api.port"))
+
+    - id: org.apache.brooklyn.entity.messaging.qpid.QpidBroker
+      iconUrl: classpath:///qpid-logo.jpeg
+      item:
+        type: org.apache.brooklyn.entity.messaging.qpid.QpidBroker
+        name: Qpid Broker
+        description: Apache Qpid is an open-source messaging system, implementing the Advanced Message Queuing Protocol (AMQP)
+    - id: org.apache.brooklyn.entity.messaging.storm.Storm
+      iconUrl: classpath:///apache-storm-logo.png
+      item:
+        type: org.apache.brooklyn.entity.messaging.storm.Storm
+        name: Storm Node
+        description: Apache Storm is a distributed realtime computation system. 
+    - id: org.apache.brooklyn.entity.messaging.kafka.KafkaCluster
+      iconUrl: classpath:///kafka-logo.png
+      item:
+        type: org.apache.brooklyn.entity.messaging.kafka.KafkaCluster
+        name: Kafka
+        description: Apache Kafka is a distributed publish-subscribe messaging system
+    - id: org.apache.brooklyn.entity.messaging.activemq.ActiveMQQueue
+      iconUrl: classpath:///activemq-logo.png
+      item:
+        type: org.apache.brooklyn.entity.messaging.activemq.ActiveMQQueue
+        name: ActiveMQ Queue
+    - id: org.apache.brooklyn.entity.zookeeper.ZooKeeperEnsemble
+      iconUrl: classpath:///zookeeper-logo.gif
+      item:
+        type: org.apache.brooklyn.entity.zookeeper.ZooKeeperEnsemble
+        name: ZooKeeper ensemble
+        description: A cluster of ZooKeeper servers. 
+    - id: org.apache.brooklyn.entity.messaging.kafka.KafkaZooKeeper
+      iconUrl: classpath:///kafka-logo.png
+      item:
+        type: org.apache.brooklyn.entity.messaging.kafka.KafkaZooKeeper
+        name: Kafka ZooKeeper
+    - id: org.apache.brooklyn.entity.messaging.activemq.ActiveMQTopic
+      iconUrl: classpath:///activemq-logo.png
+      item:
+        type: org.apache.brooklyn.entity.messaging.activemq.ActiveMQTopic
+        name: ActiveMQ Topic
+    - id: org.apache.brooklyn.entity.messaging.qpid.QpidQueue
+      iconUrl: classpath:///qpid-logo.jpeg
+      item:
+        type: org.apache.brooklyn.entity.messaging.qpid.QpidQueue
+        name: Qpid Queue
+    - id: org.apache.brooklyn.entity.zookeeper.ZooKeeperNode
+      iconUrl: classpath:///zookeeper-logo.gif
+      item:
+        type: org.apache.brooklyn.entity.zookeeper.ZooKeeperNode
+        name: ZooKeeper Node
+        description: Apache ZooKeeper is a server which enables 
+    - id: org.apache.brooklyn.entity.messaging.rabbit.RabbitBroker
+      iconUrl: classpath:///RabbitMQLogo.png
+      item:
+        type: org.apache.brooklyn.entity.messaging.rabbit.RabbitBroker
+        name: RabbitMQ Broker
+        description: RabbitMQ is an open source message broker software (i.e. message-oriented middleware) that implements the Advanced Message Queuing Protocol (AMQP) standard
+    - id: org.apache.brooklyn.entity.messaging.kafka.KafkaBroker
+      iconUrl: classpath:///kafka-logo.png
+      item:
+        type: org.apache.brooklyn.entity.messaging.kafka.KafkaBroker
+        name: Kafka Broker
+    - id: org.apache.brooklyn.entity.messaging.qpid.QpidTopic
+      iconUrl: classpath:///qpid-logo.jpeg
+      item:
+        type: org.apache.brooklyn.entity.messaging.qpid.QpidTopic
+        name: Qpid Topic
+    - id: org.apache.brooklyn.entity.messaging.storm.StormDeployment
+      iconUrl: classpath:///apache-storm-logo.png
+      item:
+        type: org.apache.brooklyn.entity.messaging.storm.StormDeployment
+        name: Storm Deployment
+        description: A Storm cluster. Apache Storm is a distributed realtime computation system. 
